@@ -1,0 +1,33 @@
+Project
+-------
+Name: gords-flight-sim
+Author: Gordon Foster
+License: see COPYING for details
+
+
+Files
+-----
+
+data/asphalt.bmp
+data/grass.bmp
+glut.cbp
+gpl.txt
+main.cpp
+readme.txt
+
+Controls
+--------
+W - move forward
+S - move backwards
+A - yaw left
+D - yaw right
+
+I - pitch down
+K - pitch up
+J - roll left
+L - roll right
+
+UP - move up
+DOWN - move down
+LEFT - move left
+RIGHT - move right
