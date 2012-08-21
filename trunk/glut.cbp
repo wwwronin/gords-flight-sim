@@ -17,6 +17,7 @@
 				</Compiler>
 				<Linker>
 					<Add library="sfml-graphics" />
+					<Add library="glu32" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -45,6 +46,8 @@
 			<Add library="gdi32" />
 			<Add directory="$(#glut.lib)" />
 		</Linker>
+		<Unit filename="camera.cpp" />
+		<Unit filename="camera.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<code_completion />
