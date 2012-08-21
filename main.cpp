@@ -106,22 +106,22 @@ void keyOperations (void)
         exit(0);
     if (keyStates['j'])
     {
-        Camera.RotateZ(1.0 * SPEED);
+        Camera.RotateZ(0.25 * SPEED);
     }
 
     if (keyStates['l'])
     {
-        Camera.RotateZ(-1.0 * SPEED);
+        Camera.RotateZ(-0.25 * SPEED);
     }
 
     if (keyStates['a'])
     {
-        Camera.RotateY(1.0 * SPEED);
+        Camera.RotateY(0.25 * SPEED);
     }
 
     if (keyStates['d'])
     {
-        Camera.RotateY(-1.0 * SPEED);
+        Camera.RotateY(-0.25 * SPEED);
     }
 
     if (keyStates['w'])
@@ -136,11 +136,11 @@ void keyOperations (void)
 
     if (keyStates['i'])
     {
-        Camera.RotateX(-0.5 * SPEED);
+        Camera.RotateX(-0.1 * SPEED);
     }
     if (keyStates['k'])
     {
-        Camera.RotateX(0.5 * SPEED);
+        Camera.RotateX(0.1* SPEED);
     }
 
     glutPostRedisplay();

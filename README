@@ -10,6 +10,8 @@ Files
 
 data/asphalt.bmp
 data/grass.bmp
+camera.cpp
+camera.h
 glut.cbp
 gpl.txt
 main.cpp
