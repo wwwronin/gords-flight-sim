@@ -41,11 +41,11 @@ right : strafe right
 #include "camera.h"
 
 #define NEARPLANE    0
-#define FARPLANE     500
+#define FARPLANE     1000
 
 CCamera Camera;
 
-GLuint textures[2];
+GLuint textures[2+5];
 
 const GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
 const GLfloat light_diffuse[]  = { .5f, .5f, .5f, 1.0f };
@@ -59,17 +59,31 @@ const GLfloat high_shininess[] = { 100.0f };
 
 bool* keyStates = new bool[256]; // Create an array of boolean values of leng
 
+float speed = 0;
+
 void LoadTextures()
 {
     sf::Image img;
     sf::Image img2;
+    sf::Image img3, img4, img5, img6, img7;
     if(!img.LoadFromFile("c:\\Grass.bmp"))
         throw 1;
-
     if(!img2.LoadFromFile("c:\\asphalt.bmp"))
         throw 1;
 
-    glGenTextures(2, textures);
+
+    if(!img3.LoadFromFile("c:\\backw3.bmp"))
+        throw 1;
+    if(!img4.LoadFromFile("c:\\frontw3.bmp"))
+        throw 1;
+    if(!img5.LoadFromFile("c:\\leftw3.bmp"))
+        throw 1;
+    if(!img6.LoadFromFile("c:\\rightw3.bmp"))
+        throw 1;
+    if(!img7.LoadFromFile("c:\\topw3.bmp"))
+        throw 1;
+
+    glGenTextures(7, textures);
 
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
@@ -80,6 +94,32 @@ void LoadTextures()
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img2.GetWidth(), img2.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img2.GetPixelsPtr());
+
+
+    glBindTexture(GL_TEXTURE_2D, textures[2]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img3.GetWidth(), img3.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img3.GetPixelsPtr());
+
+    glBindTexture(GL_TEXTURE_2D, textures[3]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img4.GetWidth(), img4.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img4.GetPixelsPtr());
+
+    glBindTexture(GL_TEXTURE_2D, textures[4]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img5.GetWidth(), img5.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img5.GetPixelsPtr());
+
+    glBindTexture(GL_TEXTURE_2D, textures[5]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img6.GetWidth(), img6.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img6.GetPixelsPtr());
+
+    glBindTexture(GL_TEXTURE_2D, textures[6]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img7.GetWidth(), img7.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img7.GetPixelsPtr());
 
 }
 
@@ -92,13 +132,13 @@ static void resize(int width, int height)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    gluPerspective(45,ar,NEARPLANE,FARPLANE);
+    gluPerspective(90,ar,NEARPLANE,FARPLANE);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity() ;
 }
 
-#define SPEED 3
+#define SPEED 7
 
 void keyOperations (void)
 {
@@ -106,44 +146,113 @@ void keyOperations (void)
         exit(0);
     if (keyStates['j'])
     {
-        Camera.RotateZ(0.25 * SPEED);
+        Camera.RotateZ(1 * SPEED);
     }
 
     if (keyStates['l'])
     {
-        Camera.RotateZ(-0.25 * SPEED);
+        Camera.RotateZ(-1 * SPEED);
     }
 
     if (keyStates['a'])
     {
-        Camera.RotateY(0.25 * SPEED);
+        Camera.RotateY(0.5 * SPEED);
     }
 
     if (keyStates['d'])
     {
-        Camera.RotateY(-0.25 * SPEED);
+        Camera.RotateY(-0.5 * SPEED);
     }
 
     if (keyStates['w'])
     {
-        Camera.MoveForward(-0.1 * SPEED);
+        if(speed > -1)
+            speed -= 0.01;
     }
 
     if (keyStates['s'])
     {
-        Camera.MoveForward(0.1 * SPEED);
+        if(speed < 0)
+            speed += 0.01;
     }
 
     if (keyStates['i'])
     {
-        Camera.RotateX(-0.1 * SPEED);
+        Camera.RotateX(-0.5 * SPEED);
     }
     if (keyStates['k'])
     {
-        Camera.RotateX(0.1* SPEED);
+        Camera.RotateX(0.5* SPEED);
     }
 
     glutPostRedisplay();
+}
+
+static void drawskybox()
+{
+    // Draw a skybox
+    // Store the current matrix
+    glPushMatrix();
+
+    glEnable(GL_TEXTURE_2D);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_BLEND);
+
+    // Just in case we set all vertices to white.
+    glColor4f(1,1,1,1);
+
+    // Render the front quad
+    glBindTexture(GL_TEXTURE_2D, textures[3]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f(  1000.0f, 550.0f, 0.0f );
+        glTexCoord2f(1, 0); glVertex3f( -1000.0f, 550.0f, 0.0f );
+        glTexCoord2f(1, 1); glVertex3f( -1000.0f,  -450.0f, 0.0f );
+        glTexCoord2f(0, 1); glVertex3f(  1000.5f,  -450.0f, 0.0f );
+    glEnd();
+
+
+    // Render the left quad
+    glBindTexture(GL_TEXTURE_2D, textures[4]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f(  -1000.0f, 550.0f,  0.0f );
+        glTexCoord2f(1, 0); glVertex3f( -1000.0f, 550.0f, -FARPLANE );
+        glTexCoord2f(1, 1); glVertex3f(  -1000.0f,  -450.0f, -FARPLANE );
+        glTexCoord2f(0, 1); glVertex3f(  -1000.0f,  -450.0f,  0.0f );
+    glEnd();
+
+    // Render the back quad
+    glBindTexture(GL_TEXTURE_2D, textures[2]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f( -1000.0f, 550.0f,  -FARPLANE );
+        glTexCoord2f(1, 0); glVertex3f(  1000.0f, 550.0f,  -FARPLANE );
+        glTexCoord2f(1, 1); glVertex3f(  1000.0f,  -450.0f,  -FARPLANE );
+        glTexCoord2f(0, 1); glVertex3f( -1000.0f,  -450.0f,  -FARPLANE );
+
+    glEnd();
+
+    // Render the right quad
+    glBindTexture(GL_TEXTURE_2D, textures[5]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f( 1000.0f, 550.0f, -FARPLANE );
+        glTexCoord2f(1, 0); glVertex3f( 1000.0f, 550.0f,  -0.0f );
+        glTexCoord2f(1, 1); glVertex3f( 1000.0f,  -450.0f,  -0.0f );
+        glTexCoord2f(0, 1); glVertex3f( 1000.0f,  -450.0f, -FARPLANE );
+    glEnd();
+
+    // Render the top quad
+    glBindTexture(GL_TEXTURE_2D, textures[6]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f( -1000.0f,  550.0f, -FARPLANE );
+        glTexCoord2f(1, 0); glVertex3f( 1000.0f,  550.0f,  -FARPLANE );
+        glTexCoord2f(1, 1); glVertex3f(  1000.0f,  450.0f,  0.0f );
+        glTexCoord2f(0, 1); glVertex3f(  -1000.0f,  450.0f, 0.0f );
+    glEnd();
+
+
+    // Restore enable bits and matrix
+    glPopAttrib();
+    glPopMatrix();
 }
 
 static void display(void)
@@ -151,27 +260,34 @@ static void display(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
 
+
+
     glLoadIdentity();
 
 	Camera.Render();
+
+
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     glEnable(GL_LIGHTING);
 
     glEnable(GL_TEXTURE_2D);
     glColor3f(1,1,1);
+	
+	// give us some visual orientation
+	drawskybox();
 
     // draw the grass   -   this really needs to be fixed
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     glBegin(GL_QUADS);
         glTexCoord2f (0, 0);
-        glVertex3f(-100,-1,0);
+        glVertex3f(-1000,-1,0);
         glTexCoord2f (1, 0);
-        glVertex3f(100,-1,0);
+        glVertex3f(1000,-1,0);
         glTexCoord2f (1, 1);
-        glVertex3f(100,-1,-FARPLANE);
+        glVertex3f(1000,-1,-FARPLANE);
         glTexCoord2f (0, 1);
-        glVertex3f(-100,-1,-FARPLANE);
+        glVertex3f(-1000,-1,-FARPLANE);
     glEnd();
 
     // draw the runway
@@ -192,6 +308,7 @@ static void display(void)
     glEnd();
 
     glDisable(GL_TEXTURE_2D);
+
 
     // draw yellow lines
     glPushMatrix();
@@ -242,14 +359,14 @@ static void display(void)
         glPopMatrix();
     }
 
-    // make a sun (cheaply, it isn't really FARPLANE away)
-    glColor3f(1.0,0.5,0.0);
-    glPushMatrix();
-    glTranslatef(0,100,-50);
-    glutSolidSphere(1.0,50,50);
-    glPopMatrix();
+
 
     glPopMatrix();
+
+
+
+
+
 
     glutSwapBuffers();
 }
@@ -285,6 +402,7 @@ static void specialkey(int key, int x, int y)
 static void idle(void)
 {
     keyOperations();
+    Camera.MoveForward(speed * SPEED);
     glutPostRedisplay();
 }
 
