@@ -226,12 +226,12 @@
 1331312647 c:\mingw\include\math.h
 	<_mingw.h>
 
-1346341603 source:c:\documents and settings\gfoster\desktop\gords-flight-sim\main.cpp
+1346348355 source:c:\documents and settings\gfoster\desktop\gords-flight-sim\main.cpp
 	<windows.h>
 	<GL/glut.h>
 	<SFML/Graphics.hpp>
-	"camera.h"
 	<stdio.h>
+	"camera.h"
 
 1264625642 c:\mingw\include\sfml\graphics.hpp
 	<SFML/Window.hpp>
