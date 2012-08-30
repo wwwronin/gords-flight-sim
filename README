@@ -9,13 +9,23 @@ Files
 -----
 
 data/asphalt.bmp
+data/backw3.bmp
+data/frontw3.bmp
 data/grass.bmp
+data/leftw3.bmp
+data/rightw3.bmp
+data/test.obj
+data/topw3.bmp
 camera.cpp
 camera.h
+COPYING
 glut.cbp
+glut.depend
+glut.layout
 gpl.txt
 main.cpp
-readme.txt
+README
+screenshot.jpg
 
 Controls
 --------

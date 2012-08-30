@@ -35,23 +35,31 @@ right : strafe right
 
 */
 
+// INCLUDES
+
 #include <windows.h>            // after upgrading to GLUT 3.7.6, had to add this!
 #include <GL/glut.h>
 #include <SFML/Graphics.hpp>    // using for loading textures
+#include<stdio.h>
 #include "camera.h"
+
+// DEFINES
 
 #define NEARPLANE    0
 #define FARPLANE     1000
+#define SPEED 7
+
+// GLOBALS
 
 CCamera Camera;
 
 GLuint textures[2+5];
+GLuint car;
 
 const GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
 const GLfloat light_diffuse[]  = { .5f, .5f, .5f, 1.0f };
 const GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 const GLfloat light_position[] = {0, 5, -50, 0.0f };
-
 const GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f };
 const GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f };
 const GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -60,8 +68,27 @@ const GLfloat high_shininess[] = { 100.0f };
 bool* keyStates = new bool[256]; // Create an array of boolean values of leng
 
 float speed = 0;
+float carrot;
 
-void LoadTextures()
+char ch='1';
+
+// FUNCTION DEFINITIONS
+static void LoadTextures();
+static void drawskybox();
+static void drawObjs();
+static void loadObj(char *fname);
+static void keyOperations (void);
+static void resize(int width, int height);
+static void reshape(int w,int h);
+static void keyUp (unsigned char key, int x, int y);
+static void key(unsigned char key, int x, int y);
+static void specialkey(int key, int x, int y);
+static void idle();
+static void drawground();
+
+// UTILITY FUNCTIONS
+
+static void LoadTextures()
 {
     sf::Image img;
     sf::Image img2;
@@ -70,7 +97,6 @@ void LoadTextures()
         throw 1;
     if(!img2.LoadFromFile("c:\\asphalt.bmp"))
         throw 1;
-
 
     if(!img3.LoadFromFile("c:\\backw3.bmp"))
         throw 1;
@@ -97,50 +123,69 @@ void LoadTextures()
 
 
     glBindTexture(GL_TEXTURE_2D, textures[2]);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img3.GetWidth(), img3.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img3.GetPixelsPtr());
 
     glBindTexture(GL_TEXTURE_2D, textures[3]);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img4.GetWidth(), img4.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img4.GetPixelsPtr());
 
     glBindTexture(GL_TEXTURE_2D, textures[4]);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img5.GetWidth(), img5.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img5.GetPixelsPtr());
 
     glBindTexture(GL_TEXTURE_2D, textures[5]);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img6.GetWidth(), img6.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img6.GetPixelsPtr());
 
     glBindTexture(GL_TEXTURE_2D, textures[6]);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img7.GetWidth(), img7.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img7.GetPixelsPtr());
 
 }
 
-/* GLUT callback Handlers */
-static void resize(int width, int height)
+static void loadObj(char *fname)
 {
-    const float ar = (float) width / (float) height;
+	FILE *fp;
+	int read;
+	GLfloat x, y, z;
+	char ch;
+	car=glGenLists(1);
+	fp=fopen(fname,"r");
 
-    glViewport(0, 0, width, height);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+	if (!fp)
+    {
+       	printf("can't open file %s\n", fname);
+	 	exit(1);
+    }
 
-    gluPerspective(90,ar,NEARPLANE,FARPLANE);
+	glPointSize(2.0);
+	glNewList(car, GL_COMPILE);
+	glPushMatrix();
+	glBegin(GL_POINTS);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity() ;
+	while(!(feof(fp)))
+	{
+		read=fscanf(fp,"%c %f %f %f",&ch,&x,&y,&z);
+		if(read==4&&ch=='v')
+		{
+			glVertex3f(x,y,z);
+		}
+	}
+
+	glEnd();
+	glPopMatrix();
+	glEndList();
+
+	fclose(fp);
 }
 
-#define SPEED 7
-
-void keyOperations (void)
+static void keyOperations (void)
 {
     if (keyStates['q'])
         exit(0);
@@ -184,75 +229,61 @@ void keyOperations (void)
     {
         Camera.RotateX(0.5* SPEED);
     }
-
-    glutPostRedisplay();
 }
 
-static void drawskybox()
+// CALLBACK FUNCTIONS
+
+static void resize(int width, int height)
 {
-    // Draw a skybox
-    // Store the current matrix
-    glPushMatrix();
+    const float ar = (float) width / (float) height;
+    glViewport(0, 0, width, height);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
 
-    glEnable(GL_TEXTURE_2D);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_LIGHTING);
-    glDisable(GL_BLEND);
+    gluPerspective(90,ar,NEARPLANE,FARPLANE);
 
-    // Just in case we set all vertices to white.
-    glColor4f(1,1,1,1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity() ;
+}
 
-    // Render the front quad
-    glBindTexture(GL_TEXTURE_2D, textures[3]);
-    glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex3f(  1000.0f, 550.0f, 0.0f );
-        glTexCoord2f(1, 0); glVertex3f( -1000.0f, 550.0f, 0.0f );
-        glTexCoord2f(1, 1); glVertex3f( -1000.0f,  -450.0f, 0.0f );
-        glTexCoord2f(0, 1); glVertex3f(  1000.5f,  -450.0f, 0.0f );
-    glEnd();
+static void reshape(int w,int h)
+{
+	glViewport(0,0,w,h);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective (60, (GLfloat)w / (GLfloat)h, 0.1, 1000.0);
+	glMatrixMode(GL_MODELVIEW);
+}
 
+static void keyUp (unsigned char key, int x, int y)
+{
+    keyStates[key] = false; // Set the state of the current
+}
 
-    // Render the left quad
-    glBindTexture(GL_TEXTURE_2D, textures[4]);
-    glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex3f(  -1000.0f, 550.0f,  0.0f );
-        glTexCoord2f(1, 0); glVertex3f( -1000.0f, 550.0f, -FARPLANE );
-        glTexCoord2f(1, 1); glVertex3f(  -1000.0f,  -450.0f, -FARPLANE );
-        glTexCoord2f(0, 1); glVertex3f(  -1000.0f,  -450.0f,  0.0f );
-    glEnd();
+static void key(unsigned char key, int x, int y)
+{
+    keyStates[key] = true; // Set the state of the current
+}
+static void specialkey(int key, int w,int h)
+{
+    if(key == GLUT_KEY_UP)
+        Camera.MoveUpward(0.3);
+    else
+    if(key == GLUT_KEY_DOWN)
+        Camera.MoveUpward(-0.3);
+    else
+    if(key == GLUT_KEY_LEFT)
+        Camera.StrafeRight(-1.0);
+	else
+	if(key == GLUT_KEY_RIGHT)
+	    Camera.StrafeRight(1.0);
+}
 
-    // Render the back quad
-    glBindTexture(GL_TEXTURE_2D, textures[2]);
-    glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex3f( -1000.0f, 550.0f,  -FARPLANE );
-        glTexCoord2f(1, 0); glVertex3f(  1000.0f, 550.0f,  -FARPLANE );
-        glTexCoord2f(1, 1); glVertex3f(  1000.0f,  -450.0f,  -FARPLANE );
-        glTexCoord2f(0, 1); glVertex3f( -1000.0f,  -450.0f,  -FARPLANE );
-
-    glEnd();
-
-    // Render the right quad
-    glBindTexture(GL_TEXTURE_2D, textures[5]);
-    glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex3f( 1000.0f, 550.0f, -FARPLANE );
-        glTexCoord2f(1, 0); glVertex3f( 1000.0f, 550.0f,  -0.0f );
-        glTexCoord2f(1, 1); glVertex3f( 1000.0f,  -450.0f,  -0.0f );
-        glTexCoord2f(0, 1); glVertex3f( 1000.0f,  -450.0f, -FARPLANE );
-    glEnd();
-
-    // Render the top quad
-    glBindTexture(GL_TEXTURE_2D, textures[6]);
-    glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex3f( -1000.0f,  550.0f, -FARPLANE );
-        glTexCoord2f(1, 0); glVertex3f( 1000.0f,  550.0f,  -FARPLANE );
-        glTexCoord2f(1, 1); glVertex3f(  1000.0f,  450.0f,  0.0f );
-        glTexCoord2f(0, 1); glVertex3f(  -1000.0f,  450.0f, 0.0f );
-    glEnd();
-
-
-    // Restore enable bits and matrix
-    glPopAttrib();
-    glPopMatrix();
+static void idle(void)
+{
+    keyOperations();
+    Camera.MoveForward(speed * SPEED);
+    glutPostRedisplay();
 }
 
 static void display(void)
@@ -260,24 +291,29 @@ static void display(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
 
-
-
     glLoadIdentity();
 
 	Camera.Render();
-
-
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     glEnable(GL_LIGHTING);
 
     glEnable(GL_TEXTURE_2D);
     glColor3f(1,1,1);
-	
-	// give us some visual orientation
-	drawskybox();
 
-    // draw the grass   -   this really needs to be fixed
+	// draw the scene
+	drawskybox();
+	drawground();
+    drawObjs();  // makes GL_POINTS from .obj file
+
+    glutSwapBuffers();
+}
+
+// DRAWING FUNCTIONS
+
+static void drawground()
+{
+	// draw the grass   -   this really needs to be fixed
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     glBegin(GL_QUADS);
         glTexCoord2f (0, 0);
@@ -308,7 +344,6 @@ static void display(void)
     glEnd();
 
     glDisable(GL_TEXTURE_2D);
-
 
     // draw yellow lines
     glPushMatrix();
@@ -359,62 +394,100 @@ static void display(void)
         glPopMatrix();
     }
 
-
-
     glPopMatrix();
-
-
-
-
-
-
-    glutSwapBuffers();
 }
 
-static void keyUp (unsigned char key, int x, int y)
+static void drawskybox()
 {
-    keyStates[key] = false; // Set the state of the current
+    // Draw a skybox
+    glEnable(GL_TEXTURE_2D);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_BLEND);
+
+    // Just in case we set all vertices to white.
+    glColor4f(1,1,1,1);
+
+    // Render the front quad
+    glBindTexture(GL_TEXTURE_2D, textures[3]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f(  1000.0f, 550.0f, 0.0f );
+        glTexCoord2f(1, 0); glVertex3f( -1000.0f, 550.0f, 0.0f );
+        glTexCoord2f(1, 1); glVertex3f( -1000.0f,  -450.0f, 0.0f );
+        glTexCoord2f(0, 1); glVertex3f(  1000.0f,  -450.0f, 0.0f );
+    glEnd();
+
+    // Render the left quad
+    glBindTexture(GL_TEXTURE_2D, textures[4]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f(  -1000.0f, 550.0f,  0.0f );
+        glTexCoord2f(1, 0); glVertex3f( -1000.0f, 550.0f, -FARPLANE );
+        glTexCoord2f(1, 1); glVertex3f(  -1000.0f,  -450.0f, -FARPLANE );
+        glTexCoord2f(0, 1); glVertex3f(  -1000.0f,  -450.0f,  0.0f );
+    glEnd();
+
+    // Render the back quad
+    glBindTexture(GL_TEXTURE_2D, textures[2]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f( -1000.0f, 550.0f,  -FARPLANE );
+        glTexCoord2f(1, 0); glVertex3f(  1000.0f, 550.0f,  -FARPLANE );
+        glTexCoord2f(1, 1); glVertex3f(  1000.0f,  -450.0f,  -FARPLANE );
+        glTexCoord2f(0, 1); glVertex3f( -1000.0f,  -450.0f,  -FARPLANE );
+
+    glEnd();
+
+    // Render the right quad
+    glBindTexture(GL_TEXTURE_2D, textures[5]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f( 1000.0f, 550.0f, -FARPLANE );
+        glTexCoord2f(1, 0); glVertex3f( 1000.0f, 550.0f,  -0.0f );
+        glTexCoord2f(1, 1); glVertex3f( 1000.0f,  -450.0f,  -0.0f );
+        glTexCoord2f(0, 1); glVertex3f( 1000.0f,  -450.0f, -FARPLANE );
+    glEnd();
+
+    // Render the top quad
+    glBindTexture(GL_TEXTURE_2D, textures[6]);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex3f( -1000.0f,  550.0f, -FARPLANE );
+        glTexCoord2f(1, 0); glVertex3f( 1000.0f,  550.0f,  -FARPLANE );
+        glTexCoord2f(1, 1); glVertex3f(  1000.0f,  450.0f,  0.0f );
+        glTexCoord2f(0, 1); glVertex3f(  -1000.0f,  450.0f, 0.0f );
+    glEnd();
 }
 
-static void key(unsigned char key, int x, int y)
-{
-    keyStates[key] = true; // Set the state of the current
-}
+// DRAW LOADED .obj FILES
 
-static void specialkey(int key, int x, int y)
+static void drawObjs()
 {
-    //keyStates[key] = true; // Set the state of the current
-//    keyOperations();    // handle keyboard input
+ 	glPushMatrix();
+ 	glLoadIdentity();
+ 	glTranslatef(0.00, -5, -2.5);
+ 	glRotatef(110, 1, 0, 0);
+ 	glRotatef(180, 0, 1, 0);
+ 	glColor3f(1,0.23,0.27);
+ 	glCallList(car);
+ 	glPopMatrix();
 
-    if(key == GLUT_KEY_UP)
-        Camera.MoveUpward(0.3);
-    else
-    if(key == GLUT_KEY_DOWN)
-        Camera.MoveUpward(-0.3);
-    else
-    if(key == GLUT_KEY_LEFT)
-        Camera.StrafeRight(-1.0);
-	else
-	if(key == GLUT_KEY_RIGHT)
-	    Camera.StrafeRight(1.0);
-}
-
-static void idle(void)
-{
-    keyOperations();
-    Camera.MoveForward(speed * SPEED);
-    glutPostRedisplay();
+ 	glPushMatrix();
+ 	glTranslatef(15,-5,-100);
+ 	glRotatef(90, 1, 0, 0);
+ 	glRotatef(170, 0, 1, 0);
+ 	glRotatef(90, 0, 0, 1);
+ 	glColor3f(1,0.23,0.27);
+ 	glCallList(car);
+ 	glPopMatrix();
 }
 
 int main(int argc, char *argv[])
 {
+	// create main window
     glutInit(&argc, argv);
     glutInitWindowSize(640,480);
     glutInitWindowPosition(10,10);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+    glutCreateWindow("gord-flight-sim");
 
-    glutCreateWindow("GLUT");
-
+	// setup callbacks
     glutReshapeFunc(resize);
     glutDisplayFunc(display);
     glutKeyboardFunc(key);
@@ -422,8 +495,10 @@ int main(int argc, char *argv[])
     glutKeyboardUpFunc(keyUp);
     glutIdleFunc(idle);
 
+	// background
     glClearColor(0.529,0.808,0.980,1);      // sky blue
 
+	// lighting
     glEnable(GL_LIGHT0);
     glEnable(GL_NORMALIZE);
     glEnable(GL_COLOR_MATERIAL);
@@ -439,13 +514,13 @@ int main(int argc, char *argv[])
     glMaterialfv(GL_FRONT, GL_SPECULAR,  mat_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
 
+	// bitmap files, etc
     LoadTextures();
 
+	// wavefront obj files
+    loadObj("c:\\test.obj");//replace porsche.obj with radar.obj or any other .obj to display it
 
-    glEnable(GL_TEXTURE_2D);
-    glShadeModel(GL_SMOOTH);
-
-
+	// go
     glutMainLoop();
 
     return EXIT_SUCCESS;
