@@ -418,7 +418,7 @@ static void drawskybox()
     glEnd();
 
     // Render the left quad
-    glBindTexture(GL_TEXTURE_2D, textures[4]);
+    glBindTexture(GL_TEXTURE_2D, textures[5]);
     glBegin(GL_QUADS);
         glTexCoord2f(0, 0); glVertex3f(  -1000.0f, 550.0f,  0.0f );
         glTexCoord2f(1, 0); glVertex3f( -1000.0f, 550.0f, -FARPLANE );
@@ -433,11 +433,10 @@ static void drawskybox()
         glTexCoord2f(1, 0); glVertex3f(  1000.0f, 550.0f,  -FARPLANE );
         glTexCoord2f(1, 1); glVertex3f(  1000.0f,  -450.0f,  -FARPLANE );
         glTexCoord2f(0, 1); glVertex3f( -1000.0f,  -450.0f,  -FARPLANE );
-
     glEnd();
 
     // Render the right quad
-    glBindTexture(GL_TEXTURE_2D, textures[5]);
+    glBindTexture(GL_TEXTURE_2D, textures[4]);
     glBegin(GL_QUADS);
         glTexCoord2f(0, 0); glVertex3f( 1000.0f, 550.0f, -FARPLANE );
         glTexCoord2f(1, 0); glVertex3f( 1000.0f, 550.0f,  -0.0f );
@@ -448,10 +447,10 @@ static void drawskybox()
     // Render the top quad
     glBindTexture(GL_TEXTURE_2D, textures[6]);
     glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex3f( -1000.0f,  550.0f, -FARPLANE );
-        glTexCoord2f(1, 0); glVertex3f( 1000.0f,  550.0f,  -FARPLANE );
-        glTexCoord2f(1, 1); glVertex3f(  1000.0f,  450.0f,  0.0f );
-        glTexCoord2f(0, 1); glVertex3f(  -1000.0f,  450.0f, 0.0f );
+    	glTexCoord2f(0, 0); glVertex3f( 1000.0f,  550.0f, -FARPLANE );
+    	glTexCoord2f(1, 0); glVertex3f( -1000.0f,  550.0f,  -FARPLANE );
+    	glTexCoord2f(1, 1); glVertex3f(  -1000.0f, 550.0f,  0.0f );
+    	glTexCoord2f(0, 1); glVertex3f(  1000.0f,  550.0f, 0.0f );
     glEnd();
 }
 
