@@ -314,16 +314,37 @@ static void display(void)
 static void drawground()
 {
 	// draw the grass   -   this really needs to be fixed
+	int x, z2;
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     glBegin(GL_QUADS);
-        glTexCoord2f (0, 0);
-        glVertex3f(-1000,-1,0);
-        glTexCoord2f (1, 0);
-        glVertex3f(1000,-1,0);
-        glTexCoord2f (1, 1);
-        glVertex3f(1000,-1,-FARPLANE);
-        glTexCoord2f (0, 1);
-        glVertex3f(-1000,-1,-FARPLANE);
+    	for(x = -1000; x < 0; x +=10)
+    	{
+			for(z2 = -1000; z2 < 0; z2 +=10)
+			{
+				glTexCoord2f (0, 0);
+				glVertex3f(x, -1, z2+10);
+				glTexCoord2f (1, 0);
+				glVertex3f(x+10, -1, z2+10);
+				glTexCoord2f (1, 1);
+				glVertex3f(x+10, -1, z2);
+				glTexCoord2f (0, 1);
+				glVertex3f(x, -1, z2);
+			}
+    	}
+    	for(x = 0; x < 1000; x +=10)
+    	{
+			for(z2 = -1000; z2 < 0; z2 +=10)
+			{
+				glTexCoord2f (0, 0);
+				glVertex3f(x, -1, z2+10);
+				glTexCoord2f (1, 0);
+				glVertex3f(x+10, -1, z2+10);
+				glTexCoord2f (1, 1);
+				glVertex3f(x+10, -1, z2);
+				glTexCoord2f (0, 1);
+				glVertex3f(x, -1, z2);
+			}
+    	}
     glEnd();
 
     // draw the runway
