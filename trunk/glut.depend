@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1346332762 source:c:\documents and settings\gfoster\desktop\gords-flight-sim\camera.cpp
+1347035908 source:c:\documents and settings\gfoster\desktop\gords-flight-sim\camera.cpp
 	<windows.h>
 	"camera.h"
 	"math.h"
@@ -209,7 +209,7 @@
 1301111156 c:\mingw\include\oleidl.h
 	<objfwd.h>
 
-1346332762 c:\documents and settings\gfoster\desktop\gords-flight-sim\camera.h
+1347035908 c:\documents and settings\gfoster\desktop\gords-flight-sim\camera.h
 	<gl\glut.h>
 
 976684972 c:\mingw\include\gl\glut.h
@@ -226,11 +226,13 @@
 1331312647 c:\mingw\include\math.h
 	<_mingw.h>
 
-1346357191 source:c:\documents and settings\gfoster\desktop\gords-flight-sim\main.cpp
+1347038827 source:c:\documents and settings\gfoster\desktop\gords-flight-sim\main.cpp
 	<windows.h>
 	<GL/glut.h>
 	<SFML/Graphics.hpp>
 	<stdio.h>
+	<stdarg.h>
+	<stdlib.h>
 	"camera.h"
 
 1264625642 c:\mingw\include\sfml\graphics.hpp
