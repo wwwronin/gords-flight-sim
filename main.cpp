@@ -40,8 +40,24 @@ right : strafe right
 #include <windows.h>            // after upgrading to GLUT 3.7.6, had to add this!
 #include <GL/glut.h>
 #include <SFML/Graphics.hpp>    // using for loading textures
-#include<stdio.h>
+#include <stdio.h>
+#include <stdarg.h>   //  To use functions with variables arguments
+#include <stdlib.h>   //  for malloc
 #include "camera.h"
+
+using namespace std;
+
+// this will be set on Visual Studio only, so this code is added for all other compilers
+#ifndef _MSC_VER
+#define vsprintf_s(b,l,f,v) vsprintf(b,f,v);
+#endif
+
+//  Just a pointer to a font style..
+//  Fonts supported by GLUT are: GLUT_BITMAP_8_BY_13,
+//  GLUT_BITMAP_9_BY_15, GLUT_BITMAP_TIMES_ROMAN_10,
+//  GLUT_BITMAP_TIMES_ROMAN_24, GLUT_BITMAP_HELVETICA_10,
+//  GLUT_BITMAP_HELVETICA_12, and GLUT_BITMAP_HELVETICA_18.
+GLvoid *font_style = GLUT_BITMAP_TIMES_ROMAN_24;
 
 // DEFINES
 
@@ -85,6 +101,7 @@ static void key(unsigned char key, int x, int y);
 static void specialkey(int key, int x, int y);
 static void idle();
 static void drawground();
+static void printw (float x, float y, float z, char* format, ...);
 
 // UTILITY FUNCTIONS
 
@@ -232,10 +249,12 @@ static void keyOperations (void)
 }
 
 // CALLBACK FUNCTIONS
-
+float mywidth, myheight;
 static void resize(int width, int height)
 {
     const float ar = (float) width / (float) height;
+    mywidth = width;
+    myheight = height;
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -293,7 +312,16 @@ static void display(void)
 
     glLoadIdentity();
 
+    int x,y,z;
+
+	x = -1000;
+	y = 1000-80;
+	z = -1000;
+
+
 	Camera.Render();
+
+
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     glEnable(GL_LIGHTING);
@@ -301,10 +329,20 @@ static void display(void)
     glEnable(GL_TEXTURE_2D);
     glColor3f(1,1,1);
 
+
+
 	// draw the scene
 	drawskybox();
 	drawground();
     drawObjs();  // makes GL_POINTS from .obj file
+
+    glPushMatrix();
+	glLoadIdentity();
+	glColor3f(0.0f,0.0f,1.0f);
+    printw(x, y, z, "char: %c, decimal: %d, float: %f, string: %s", 'X', 1618, 1.618, "text");
+	glPopMatrix();
+
+
 
     glutSwapBuffers();
 }
@@ -544,4 +582,41 @@ int main(int argc, char *argv[])
     glutMainLoop();
 
     return EXIT_SUCCESS;
+}
+
+//-------------------------------------------------------------------------
+//  Draws a string at the specified coordinates.
+//-------------------------------------------------------------------------
+static void printw (float x, float y, float z, char* format, ...)
+{
+    va_list args;   //  Variable argument list
+    int len;        // String length
+    int i;          //  Iterator
+    char* text;    // Text
+
+    //  Initialize a variable argument list
+    va_start(args, format);
+
+    //  Return the number of characters in the string referenced the list of arguments.
+    // _vscprintf doesn't count terminating '\0' (that's why +1)
+    len = _vscprintf(format, args) + 1;
+
+    //  Allocate memory for a string of the specified size
+    text = (char*)malloc(len * sizeof(char));
+
+    //  Write formatted output using a pointer to the list of arguments
+    vsprintf_s(text, len, format, args);
+
+    //  End using variable argument list
+    va_end(args);
+
+    //  Specify the raster position for pixel operations.
+    glRasterPos3f (x, y, z);
+
+    //  Draw the characters one by one
+    for (i = 0; text[i] != '\0'; i++)
+    glutBitmapCharacter(font_style, text[i]);
+
+    //  Free the allocated memory for the string
+    free(text);
 }
