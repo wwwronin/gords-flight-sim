@@ -41,35 +41,29 @@ right : strafe right
 #include <GL/glut.h>
 #include <SFML/Graphics.hpp>    // using for loading textures
 #include <stdio.h>
-#include <stdarg.h>   //  To use functions with variables arguments
-#include <stdlib.h>   //  for malloc
+#include <stdarg.h>   			//  To use functions with variables arguments
+#include <stdlib.h>   			//  for malloc
 #include "camera.h"
 
 using namespace std;
+
+// DEFINES
 
 // this will be set on Visual Studio only, so this code is added for all other compilers
 #ifndef _MSC_VER
 #define vsprintf_s(b,l,f,v) vsprintf(b,f,v);
 #endif
 
-//  Just a pointer to a font style..
-//  Fonts supported by GLUT are: GLUT_BITMAP_8_BY_13,
-//  GLUT_BITMAP_9_BY_15, GLUT_BITMAP_TIMES_ROMAN_10,
-//  GLUT_BITMAP_TIMES_ROMAN_24, GLUT_BITMAP_HELVETICA_10,
-//  GLUT_BITMAP_HELVETICA_12, and GLUT_BITMAP_HELVETICA_18.
-GLvoid *font_style = GLUT_BITMAP_TIMES_ROMAN_24;
-
-// DEFINES
-
 #define NEARPLANE    0
-#define FARPLANE     1000
-#define SPEED 7
-
+#define FARPLANE     1
+#define GRASSD		10000
+#define GRASSD_STEP	10000
+#define FOVY		35
 // GLOBALS
 
 CCamera Camera;
 
-GLuint textures[2+5];
+GLuint textures[2+5+1];
 GLuint car;
 
 const GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -83,50 +77,98 @@ const GLfloat high_shininess[] = { 100.0f };
 
 bool* keyStates = new bool[256]; // Create an array of boolean values of leng
 
-float speed = 0;
-float carrot;
+//  Just a pointer to a font style..
+//  Fonts supported by GLUT are: GLUT_BITMAP_8_BY_13,
+//  GLUT_BITMAP_9_BY_15, GLUT_BITMAP_TIMES_ROMAN_10,
+//  GLUT_BITMAP_TIMES_ROMAN_24, GLUT_BITMAP_HELVETICA_10,
+//  GLUT_BITMAP_HELVETICA_12, and GLUT_BITMAP_HELVETICA_18.
+GLvoid *font_style = GLUT_BITMAP_TIMES_ROMAN_24;
 
-char ch='1';
+float moveSpeed = 0;
+//float timeSinceLastUpdate, prevTime, moveFactor;
 
 // FUNCTION DEFINITIONS
-static void LoadTextures();
-static void drawskybox();
-static void drawObjs();
-static void loadObj(char *fname);
+
+void display();
+void printw();
+void LoadTextures();
+void drawskybox();
+void drawObjs();
+void drawText();
+void loadObj(char *fname);
 static void keyOperations (void);
-static void resize(int width, int height);
-static void reshape(int w,int h);
-static void keyUp (unsigned char key, int x, int y);
-static void key(unsigned char key, int x, int y);
-static void specialkey(int key, int x, int y);
-static void idle();
-static void drawground();
-static void printw (float x, float y, float z, char* format, ...);
+void resize(int width, int height);
+void keyUp (unsigned char key, int x, int y);
+void key(unsigned char key, int x, int y);
+void specialkey(int key, int x, int y);
+void idle();
+void drawground();
+void printw (float x, float y, float z, char* format, ...);
+void reset();
 
 // UTILITY FUNCTIONS
 
-static void LoadTextures()
+//-------------------------------------------------------------------------
+//  Draws a string at the specified coordinates.
+//-------------------------------------------------------------------------
+void printw (float x, float y, float z, char* format, ...)
+{
+    va_list args;   //  Variable argument list
+    int len;        // String length
+    int i;          //  Iterator
+    char* text;    // Text
+
+    //  Initialize a variable argument list
+    va_start(args, format);
+
+    //  Return the number of characters in the string referenced the list of arguments.
+    // _vscprintf doesn't count terminating '\0' (that's why +1)
+    len = _vscprintf(format, args) + 1;
+
+    //  Allocate memory for a string of the specified size
+    text = (char*)malloc(len * sizeof(char));
+
+    //  Write formatted output using a pointer to the list of arguments
+    vsprintf_s(text, len, format, args);
+
+    //  End using variable argument list
+    va_end(args);
+
+    //  Specify the raster position for pixel operations.
+    glRasterPos3f (x, y, z);
+
+    //  Draw the characters one by one
+    for (i = 0; text[i] != '\0'; i++)
+    glutBitmapCharacter(font_style, text[i]);
+
+    //  Free the allocated memory for the string
+    free(text);
+}
+
+void LoadTextures()
 {
     sf::Image img;
     sf::Image img2;
     sf::Image img3, img4, img5, img6, img7;
-    if(!img.LoadFromFile("c:\\Grass.bmp"))
+    sf::Image img8;
+    if(!img.LoadFromFile("Grass.bmp"))
         throw 1;
-    if(!img2.LoadFromFile("c:\\asphalt.bmp"))
+    if(!img2.LoadFromFile("asphalt.bmp"))
         throw 1;
+    if(!img3.LoadFromFile("backw3.bmp"))
+        throw 1;
+    if(!img4.LoadFromFile("frontw3.bmp"))
+        throw 1;
+    if(!img5.LoadFromFile("leftw3.bmp"))
+        throw 1;
+    if(!img6.LoadFromFile("rightw3.bmp"))
+        throw 1;
+    if(!img7.LoadFromFile("topw3.bmp"))
+        throw 1;
+    if(!img8.LoadFromFile("home.bmp"))
+		throw 1;
 
-    if(!img3.LoadFromFile("c:\\backw3.bmp"))
-        throw 1;
-    if(!img4.LoadFromFile("c:\\frontw3.bmp"))
-        throw 1;
-    if(!img5.LoadFromFile("c:\\leftw3.bmp"))
-        throw 1;
-    if(!img6.LoadFromFile("c:\\rightw3.bmp"))
-        throw 1;
-    if(!img7.LoadFromFile("c:\\topw3.bmp"))
-        throw 1;
-
-    glGenTextures(7, textures);
+    glGenTextures(8, textures);
 
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
@@ -137,7 +179,6 @@ static void LoadTextures()
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img2.GetWidth(), img2.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img2.GetPixelsPtr());
-
 
     glBindTexture(GL_TEXTURE_2D, textures[2]);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
@@ -164,18 +205,23 @@ static void LoadTextures()
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img7.GetWidth(), img7.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img7.GetPixelsPtr());
 
+    glBindTexture(GL_TEXTURE_2D, textures[7]);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img8.GetWidth(), img8.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img8.GetPixelsPtr());
+
 }
 
-static void loadObj(char *fname)
+void loadObj(char *fname)
 {
 	FILE *fp;
 	int read;
 	GLfloat x, y, z;
 	char ch;
-	car=glGenLists(1);
-	fp=fopen(fname,"r");
+	car = glGenLists(1);
+	fp = fopen(fname, "r");
 
-	if (!fp)
+	if(!fp)
     {
        	printf("can't open file %s\n", fname);
 	 	exit(1);
@@ -185,16 +231,12 @@ static void loadObj(char *fname)
 	glNewList(car, GL_COMPILE);
 	glPushMatrix();
 	glBegin(GL_POINTS);
-
-	while(!(feof(fp)))
-	{
-		read=fscanf(fp,"%c %f %f %f",&ch,&x,&y,&z);
-		if(read==4&&ch=='v')
+		while(!(feof(fp)))
 		{
-			glVertex3f(x,y,z);
+			read = fscanf(fp, "%c %f %f %f", &ch, &x, &y, &z);
+			if(read == 4 && ch == 'v')
+				glVertex3f(x,y,z);
 		}
-	}
-
 	glEnd();
 	glPopMatrix();
 	glEndList();
@@ -206,84 +248,76 @@ static void keyOperations (void)
 {
     if (keyStates['q'])
         exit(0);
+
     if (keyStates['j'])
-    {
-        Camera.RotateZ(1 * SPEED);
-    }
+        Camera.RotateZ(1);
 
     if (keyStates['l'])
-    {
-        Camera.RotateZ(-1 * SPEED);
-    }
+        Camera.RotateZ(-1);
 
     if (keyStates['a'])
-    {
-        Camera.RotateY(0.5 * SPEED);
-    }
+        Camera.RotateY(0.3f);
 
     if (keyStates['d'])
-    {
-        Camera.RotateY(-0.5 * SPEED);
-    }
+        Camera.RotateY(-0.3f);
 
     if (keyStates['w'])
-    {
-        if(speed > -1)
-            speed -= 0.01;
-    }
+        if(moveSpeed <1)
+            moveSpeed += .01;
 
     if (keyStates['s'])
     {
-        if(speed < 0)
-            speed += 0.01;
+        if(moveSpeed > 0)
+            moveSpeed -= .01;
+        if(moveSpeed < .01)
+			moveSpeed=0;
     }
 
     if (keyStates['i'])
-    {
-        Camera.RotateX(-0.5 * SPEED);
-    }
+        Camera.RotateX(-0.5);
+
     if (keyStates['k'])
-    {
-        Camera.RotateX(0.5* SPEED);
-    }
+        Camera.RotateX(0.5);
+
+    if (keyStates['r'])
+    	reset();
+}
+
+void reset()
+{
+	moveSpeed = 0;
+	Camera.Reset();
 }
 
 // CALLBACK FUNCTIONS
-float mywidth, myheight;
-static void resize(int width, int height)
+
+void resize(int width, int height)
 {
     const float ar = (float) width / (float) height;
-    mywidth = width;
-    myheight = height;
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    gluPerspective(90,ar,NEARPLANE,FARPLANE);
+    gluPerspective(FOVY,ar,NEARPLANE,FARPLANE);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity() ;
 }
 
-static void reshape(int w,int h)
-{
-	glViewport(0,0,w,h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective (60, (GLfloat)w / (GLfloat)h, 0.1, 1000.0);
-	glMatrixMode(GL_MODELVIEW);
-}
-
-static void keyUp (unsigned char key, int x, int y)
+void keyUp (unsigned char key, int x, int y)
 {
     keyStates[key] = false; // Set the state of the current
 }
 
-static void key(unsigned char key, int x, int y)
+void key(unsigned char key, int x, int y)
 {
-    keyStates[key] = true; // Set the state of the current
+	if(key == 27)
+		exit(0);
+	else
+		keyStates[key] = true; // Set the state of the current
 }
-static void specialkey(int key, int w,int h)
+
+void specialkey(int key, int w,int h)
 {
     if(key == GLUT_KEY_UP)
         Camera.MoveUpward(0.3);
@@ -292,36 +326,61 @@ static void specialkey(int key, int w,int h)
         Camera.MoveUpward(-0.3);
     else
     if(key == GLUT_KEY_LEFT)
-        Camera.StrafeRight(-1.0);
+        Camera.StrafeRight(-0.2);
 	else
 	if(key == GLUT_KEY_RIGHT)
-	    Camera.StrafeRight(1.0);
+	    Camera.StrafeRight(0.2);
 }
 
-static void idle(void)
+void idle(void)
 {
-    keyOperations();
-    Camera.MoveForward(speed * SPEED);
-    glutPostRedisplay();
+	glutPostRedisplay();
 }
 
-static void display(void)
+void drawText()
+{
+	SF3dVector curv;		// current vector
+    float x,y,z;
+
+	//glLoadIdentity();
+	glColor3f(1.0f, 0.0f, 0.0f);
+	curv = Camera.GetPosition();
+	x = curv.x -5.5f;
+	y = curv.y +3.5f;
+	z = -1;
+
+    printw(x, y, z, "Altitude: %f", curv.y);
+    y -=0.5f;
+    printw(x, y, z, "x: %f", curv.x);
+    y -=0.5f;
+    printw(x, y, z, "z: %f", curv.z);
+    y -=0.5f;
+    printw(x, y, z, "Speed: %f", moveSpeed);
+}
+
+void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
 
+	keyOperations();
+
     glLoadIdentity();
+    //if(moveSpeed != 0)
+    //{
+    //	SF3dVector curv;		// current vector
+	//	curv = Camera.GetPosition();
+	//	if((curv.y > 0) && (moveSpeed < 0.2f))
+	//		Camera.MoveUpward(-0.05f);
+	//	curv = Camera.GetPosition();
+	//	if(curv.y < 0)
+	//		Camera.MoveUpward(-curv.y);
+		//if((curv.y == 0) && (moveSpeed >= 0.2f))
+		//	reset();
 
-    int x,y,z;
-
-	x = -1000;
-	y = 1000-80;
-	z = -1000;
-
-
-	Camera.Render();
-
-
+		Camera.MoveForward(moveSpeed);// * moveFactor);
+		Camera.Render();
+    //}
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     glEnable(GL_LIGHTING);
@@ -329,56 +388,49 @@ static void display(void)
     glEnable(GL_TEXTURE_2D);
     glColor3f(1,1,1);
 
-
-
 	// draw the scene
 	drawskybox();
 	drawground();
     drawObjs();  // makes GL_POINTS from .obj file
+	drawText();
 
-    glPushMatrix();
-	glLoadIdentity();
-	glColor3f(0.0f,0.0f,1.0f);
-    printw(x, y, z, "char: %c, decimal: %d, float: %f, string: %s", 'X', 1618, 1.618, "text");
-	glPopMatrix();
-
-
-
-    glutSwapBuffers();
+	glFlush();
+	glutSwapBuffers();
 }
 
 // DRAWING FUNCTIONS
 
-static void drawground()
+void drawground()
 {
 	// draw the grass   -   this really needs to be fixed
 	int x, z2;
+
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     glBegin(GL_QUADS);
-    	for(x = -1000; x < 0; x +=10)
+    	for(x = -GRASSD; x < 0; x +=GRASSD_STEP)
     	{
-			for(z2 = -1000; z2 < 0; z2 +=10)
+			for(z2 = -GRASSD; z2 < 0; z2 +=GRASSD_STEP)
 			{
 				glTexCoord2f (0, 0);
-				glVertex3f(x, -1, z2+10);
+				glVertex3f(x, -1, z2+GRASSD_STEP);
 				glTexCoord2f (1, 0);
-				glVertex3f(x+10, -1, z2+10);
+				glVertex3f(x+GRASSD_STEP, -1, z2+GRASSD_STEP);
 				glTexCoord2f (1, 1);
-				glVertex3f(x+10, -1, z2);
+				glVertex3f(x+GRASSD_STEP, -1, z2);
 				glTexCoord2f (0, 1);
 				glVertex3f(x, -1, z2);
 			}
     	}
-    	for(x = 0; x < 1000; x +=10)
+    	for(x = 0; x < GRASSD; x +=GRASSD_STEP)
     	{
-			for(z2 = -1000; z2 < 0; z2 +=10)
+			for(z2 = -GRASSD; z2 < 0; z2 +=GRASSD_STEP)
 			{
 				glTexCoord2f (0, 0);
-				glVertex3f(x, -1, z2+10);
+				glVertex3f(x, -1, z2+GRASSD_STEP);
 				glTexCoord2f (1, 0);
-				glVertex3f(x+10, -1, z2+10);
+				glVertex3f(x+GRASSD_STEP, -1, z2+GRASSD_STEP);
 				glTexCoord2f (1, 1);
-				glVertex3f(x+10, -1, z2);
+				glVertex3f(x+GRASSD_STEP, -1, z2);
 				glTexCoord2f (0, 1);
 				glVertex3f(x, -1, z2);
 			}
@@ -393,23 +445,46 @@ static void drawground()
         glTexCoord2f(1, 0);
         glVertex3f(2, -1, 0);
         glTexCoord2f(0, 1);
-        glVertex3f(-2, -1, -FARPLANE);
+        glVertex3f(-2, -1, -GRASSD);
         glTexCoord2f(1, 0);
-        glVertex3f(-2, -1, -FARPLANE);
+        glVertex3f(-2, -1, -GRASSD);
         glTexCoord2f(0, 1);
         glVertex3f(2, -1, 0);
         glTexCoord2f(1, 1);
-        glVertex3f(2, -1, -FARPLANE);
+        glVertex3f(2, -1, -GRASSD);
     glEnd();
 
-    glDisable(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, textures[7]);
+    glBegin(GL_QUADS);
+		glTexCoord2f (0, 0);
+		glVertex3f(-10.0f, 2.0f, -50.0f);
+		glTexCoord2f (1, 0);
+		glVertex3f(-13.0f, 2.0f, -50.0f);
+		glTexCoord2f (1, 1);
+        glVertex3f(-13.0f, -1.0f, -50.0f);
+        glTexCoord2f (0, 1);
+        glVertex3f(-10.0f, -1.0f, -50.0f);
+
+        glTexCoord2f (0, 0);
+		glVertex3f(-10.0f, 2.0f, -50.0f);
+		glTexCoord2f (1, 0);
+		glVertex3f(-10.0f, 2.0f, -53.0f);
+		glTexCoord2f (1, 1);
+        glVertex3f(-10.0f, -1.0f, -53.0f);
+        glTexCoord2f (0, 1);
+        glVertex3f(-10.0f, -1.0f, -50.0f);
+
+    glEnd();
+glDisable(GL_TEXTURE_2D);
+
+
 
     // draw yellow lines
-    glPushMatrix();
     glDisable(GL_LIGHTING);
     glColor3f(1,1,0);
     float z;
-    for(z = -2; z > -FARPLANE; z-=1.5)
+    for(z = -2; z > -GRASSD; z-=1.5)
     {
         glBegin(GL_QUADS);
             glVertex3f(-0.125f, -1, z);
@@ -419,44 +494,9 @@ static void drawground()
         glEnd();
     }
 
-    // make a simple line of trees
-    for(z = -25; z >= -FARPLANE + 75; z-=25)
-    {
-        glPushMatrix(); // save what we've done so FARPLANE
-        glColor3f(1,1,0);
-        glTranslatef(-2.5,-1,z);
-        glRotated(90, -1, 0, 0);
-        glutSolidCone(0.25, 2, 50, 50);    // base radius, height, slices, stack
-        glPopMatrix();
-
-        glPushMatrix(); // save what we've done so FARPLANE
-        glColor3f(0,1,0);
-        glTranslatef(-2.5,0.5,z);
-        glutSolidSphere(1,50,50);
-        glPopMatrix();
-    }
-
-    // make a simple line of trees
-    for(z = -12.5; z >= -FARPLANE + 62.5; z-=25)
-    {
-        glPushMatrix(); // save what we've done so FARPLANE
-        glColor3f(1,1,0);
-        glTranslatef(2.5,-1,z);
-        glRotated(90, -1, 0, 0);
-        glutSolidCone(0.25, 2, 50, 50);    // base radius, height, slices, stack
-        glPopMatrix();
-
-        glPushMatrix(); // save what we've done so FARPLANE
-        glColor3f(0,1,0);
-        glTranslatef(2.5,0.5,z);
-        glutSolidSphere(1,50,50);
-        glPopMatrix();
-    }
-
-    glPopMatrix();
 }
 
-static void drawskybox()
+void drawskybox()
 {
     // Draw a skybox
     glEnable(GL_TEXTURE_2D);
@@ -480,34 +520,34 @@ static void drawskybox()
     glBindTexture(GL_TEXTURE_2D, textures[5]);
     glBegin(GL_QUADS);
         glTexCoord2f(0, 0); glVertex3f(  -1000.0f, 550.0f,  0.0f );
-        glTexCoord2f(1, 0); glVertex3f( -1000.0f, 550.0f, -FARPLANE );
-        glTexCoord2f(1, 1); glVertex3f(  -1000.0f,  -450.0f, -FARPLANE );
+        glTexCoord2f(1, 0); glVertex3f( -1000.0f, 550.0f, -GRASSD );
+        glTexCoord2f(1, 1); glVertex3f(  -1000.0f,  -450.0f, -GRASSD );
         glTexCoord2f(0, 1); glVertex3f(  -1000.0f,  -450.0f,  0.0f );
     glEnd();
 
     // Render the back quad
     glBindTexture(GL_TEXTURE_2D, textures[2]);
     glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex3f( -1000.0f, 550.0f,  -FARPLANE );
-        glTexCoord2f(1, 0); glVertex3f(  1000.0f, 550.0f,  -FARPLANE );
-        glTexCoord2f(1, 1); glVertex3f(  1000.0f,  -450.0f,  -FARPLANE );
-        glTexCoord2f(0, 1); glVertex3f( -1000.0f,  -450.0f,  -FARPLANE );
+        glTexCoord2f(0, 0); glVertex3f( -1000.0f, 550.0f,  -GRASSD );
+        glTexCoord2f(1, 0); glVertex3f(  1000.0f, 550.0f,  -GRASSD );
+        glTexCoord2f(1, 1); glVertex3f(  1000.0f,  -450.0f,  -GRASSD );
+        glTexCoord2f(0, 1); glVertex3f( -1000.0f,  -450.0f,  -GRASSD );
     glEnd();
 
     // Render the right quad
     glBindTexture(GL_TEXTURE_2D, textures[4]);
     glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex3f( 1000.0f, 550.0f, -FARPLANE );
+        glTexCoord2f(0, 0); glVertex3f( 1000.0f, 550.0f, -GRASSD );
         glTexCoord2f(1, 0); glVertex3f( 1000.0f, 550.0f,  -0.0f );
         glTexCoord2f(1, 1); glVertex3f( 1000.0f,  -450.0f,  -0.0f );
-        glTexCoord2f(0, 1); glVertex3f( 1000.0f,  -450.0f, -FARPLANE );
+        glTexCoord2f(0, 1); glVertex3f( 1000.0f,  -450.0f, -GRASSD );
     glEnd();
 
     // Render the top quad
     glBindTexture(GL_TEXTURE_2D, textures[6]);
     glBegin(GL_QUADS);
-    	glTexCoord2f(0, 0); glVertex3f( 1000.0f,  550.0f, -FARPLANE );
-    	glTexCoord2f(1, 0); glVertex3f( -1000.0f,  550.0f,  -FARPLANE );
+    	glTexCoord2f(0, 0); glVertex3f( 1000.0f,  550.0f, -GRASSD );
+    	glTexCoord2f(1, 0); glVertex3f( -1000.0f,  550.0f,  -GRASSD );
     	glTexCoord2f(1, 1); glVertex3f(  -1000.0f, 550.0f,  0.0f );
     	glTexCoord2f(0, 1); glVertex3f(  1000.0f,  550.0f, 0.0f );
     glEnd();
@@ -515,23 +555,15 @@ static void drawskybox()
 
 // DRAW LOADED .obj FILES
 
-static void drawObjs()
+void drawObjs()
 {
  	glPushMatrix();
  	glLoadIdentity();
- 	glTranslatef(0.00, -5, -2.5);
+ 	glTranslatef(0.00, -5, -5.5);
  	glRotatef(110, 1, 0, 0);
  	glRotatef(180, 0, 1, 0);
- 	glColor3f(1,0.23,0.27);
- 	glCallList(car);
- 	glPopMatrix();
-
- 	glPushMatrix();
- 	glTranslatef(15,-5,-100);
- 	glRotatef(90, 1, 0, 0);
- 	glRotatef(170, 0, 1, 0);
- 	glRotatef(90, 0, 0, 1);
- 	glColor3f(1,0.23,0.27);
+ 	//glColor3f(1,0.23,0.27);
+ 	glColor3f(255,255,50);
  	glCallList(car);
  	glPopMatrix();
 }
@@ -576,47 +608,11 @@ int main(int argc, char *argv[])
     LoadTextures();
 
 	// wavefront obj files
-    loadObj("c:\\test.obj");//replace porsche.obj with radar.obj or any other .obj to display it
+    loadObj("test.obj");//replace porsche.obj with radar.obj or any other .obj to display it
 
-	// go
-    glutMainLoop();
 
+	//timeSinceLastUpdate = prevTime = clock();
+	glutMainLoop();
     return EXIT_SUCCESS;
 }
 
-//-------------------------------------------------------------------------
-//  Draws a string at the specified coordinates.
-//-------------------------------------------------------------------------
-static void printw (float x, float y, float z, char* format, ...)
-{
-    va_list args;   //  Variable argument list
-    int len;        // String length
-    int i;          //  Iterator
-    char* text;    // Text
-
-    //  Initialize a variable argument list
-    va_start(args, format);
-
-    //  Return the number of characters in the string referenced the list of arguments.
-    // _vscprintf doesn't count terminating '\0' (that's why +1)
-    len = _vscprintf(format, args) + 1;
-
-    //  Allocate memory for a string of the specified size
-    text = (char*)malloc(len * sizeof(char));
-
-    //  Write formatted output using a pointer to the list of arguments
-    vsprintf_s(text, len, format, args);
-
-    //  End using variable argument list
-    va_end(args);
-
-    //  Specify the raster position for pixel operations.
-    glRasterPos3f (x, y, z);
-
-    //  Draw the characters one by one
-    for (i = 0; text[i] != '\0'; i++)
-    glutBitmapCharacter(font_style, text[i]);
-
-    //  Free the allocated memory for the string
-    free(text);
-}

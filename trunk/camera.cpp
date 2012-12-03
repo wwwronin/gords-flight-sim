@@ -2,7 +2,7 @@
 #include "camera.h"
 #include "math.h"
 #include <iostream>
-
+#include <gl\glut.h>
 
 #define SQR(x) (x*x)
 
@@ -91,6 +91,17 @@ CCamera::CCamera()
 	RotatedX = RotatedY = RotatedZ = 0.0;
 }
 
+void CCamera::Reset()
+{
+	Position = F3dVector (0.0, 0.0,	0.0);
+	ViewDir = F3dVector( 0.0, 0.0, -1.0);
+	RightVector = F3dVector (1.0, 0.0, 0.0);
+	UpVector = F3dVector (0.0, 1.0, 0.0);
+
+	//Only to be sure:
+	RotatedX = RotatedY = RotatedZ = 0.0;
+}
+
 void CCamera::Move (SF3dVector Direction)
 {
 	Position = Position + Direction;
@@ -149,7 +160,10 @@ void CCamera::Render( void )
 
 void CCamera::MoveForward( GLfloat Distance )
 {
-	Position = Position + (ViewDir*-Distance);
+	Position = Position + (ViewDir*Distance);
+
+	//if(Position.y <= 0)
+	//	Position.y = 0;
 }
 
 void CCamera::StrafeRight ( GLfloat Distance )
@@ -160,4 +174,9 @@ void CCamera::StrafeRight ( GLfloat Distance )
 void CCamera::MoveUpward( GLfloat Distance )
 {
 	Position = Position + (UpVector*Distance);
+}
+
+SF3dVector CCamera::GetPosition( void )
+{
+	return Position;
 }
