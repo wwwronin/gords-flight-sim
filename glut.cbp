@@ -31,6 +31,8 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="sfml-graphics" />
+					<Add library="glu32" />
 				</Linker>
 			</Target>
 		</Build>
@@ -40,6 +42,8 @@
 		</Compiler>
 		<Linker>
 			<Add library="opengl32" />
+			<Add library="alut" />
+			<Add library="openal32" />
 			<Add library="glut32" />
 			<Add library="glu32" />
 			<Add library="winmm" />
