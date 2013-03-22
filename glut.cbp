@@ -42,8 +42,8 @@
 		</Compiler>
 		<Linker>
 			<Add library="opengl32" />
-			<Add library="alut" />
 			<Add library="openal32" />
+			<Add library="alut" />
 			<Add library="glut32" />
 			<Add library="glu32" />
 			<Add library="winmm" />
@@ -53,6 +53,8 @@
 		<Unit filename="camera.cpp" />
 		<Unit filename="camera.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="world.cpp" />
+		<Unit filename="world.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />
